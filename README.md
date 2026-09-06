@@ -18,6 +18,7 @@ Every problem comes with a full worked solution once you submit.
   scientific notation, and a "use result as answer" button.
 - **Progress saved locally** — scores, problems seen, and an interrupted exam you can resume
   after a refresh. Everything lives in your browser's `localStorage`; nothing is uploaded.
+- **Visitor counter** — a total shown in the footer (see *Counting visitors* below).
 - Light/dark theme, works on phones.
 
 ## Topics covered (Chapters 1–6)
@@ -96,6 +97,35 @@ official value. The grader is checked against all 150 problems at exact, 4-signi
 and 3-significant-figure precision.
 
 If you spot a mistake in a problem or a solution, please open an issue.
+
+## Counting visitors
+
+GitHub Pages publishes no visitor statistics, and the app itself stores everything in the
+visitor's own browser, so `js/counter.js` adds a lightweight count instead. On every page
+load it pings [abacus](https://abacus.jasoncameron.dev) — a free public counter needing no
+account — and shows the result in the footer:
+
+- **pageviews** — incremented on every page load, so someone who opens the site and leaves
+  immediately is still counted
+- **visitors** — incremented once per browser, using a `localStorage` flag
+
+Read the current numbers without incrementing them:
+
+```bash
+curl -s https://abacus.jasoncameron.dev/get/yerkhat1-mechanics-exam-trainer/pageviews
+```
+
+What it sends: nothing but a URL hit. No cookies, no identifiers, no personal data, no
+consent banner needed. If the service is slow or down the page works exactly as normal and
+simply shows no figure.
+
+Its limits, honestly: the counter lives on a free shared service, so the namespace is
+guessable and anyone could inflate the number, and the service could disappear. Treat the
+figures as a rough indicator, not analytics. For referrers, countries and trends over time,
+delete `js/counter.js` and its `<script>` tag and drop in
+[GoatCounter](https://www.goatcounter.com) or
+[Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/) — both free and
+cookie-free, both needing an account you create yourself.
 
 ## Disclaimer
 
