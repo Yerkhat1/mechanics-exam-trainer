@@ -109,6 +109,8 @@
       timed: !!timed,
       startedAt: Date.now(),
       durationMs: EXAM_MINUTES * 60 * 1000,
+      pausedMs: 0,      /* total time spent paused */
+      pausedAt: null,   /* when the current pause began, else null */
       label: label || "Exam",
       finished: false
     };
@@ -116,31 +118,82 @@
     show("exam");
     renderQuestion();
     startTimer();
+    applyPauseUI();
   }
 
   function persistExam() {
     if (exam && !exam.finished) store(KEY_EXAM, exam); else store(KEY_EXAM, null);
   }
 
-  function remainingMs() {
-    if (!exam || !exam.timed) return null;
-    return exam.startedAt + exam.durationMs - Date.now();
+  /* Time actually spent working, excluding any paused stretches. */
+  function workedMs(e) {
+    if (!e) return 0;
+    var end = e.pausedAt || Date.now();
+    return end - e.startedAt - (e.pausedMs || 0);
+  }
+  function remainingFor(e) {
+    if (!e || !e.timed) return null;
+    return e.durationMs - workedMs(e);
+  }
+  function remainingMs() { return remainingFor(exam); }
+
+  function isPaused() { return !!(exam && exam.pausedAt); }
+
+  function setPaused(on) {
+    if (!exam || exam.finished || !exam.timed) return;
+    if (on && !exam.pausedAt) {
+      saveCurrent();
+      exam.pausedAt = Date.now();
+      toggleCalc(false);              /* no calculating on a stopped clock */
+    } else if (!on && exam.pausedAt) {
+      exam.pausedMs = (exam.pausedMs || 0) + (Date.now() - exam.pausedAt);
+      exam.pausedAt = null;
+    } else { return; }
+    persistExam();
+    applyPauseUI();
+    if (!exam.pausedAt) $("ansInput").focus();
+  }
+
+  /* Hide the question while paused so the break cannot be used to read ahead. */
+  function applyPauseUI() {
+    var paused = isPaused();
+    $("questionCard").hidden = paused;
+    $("pauseScreen").hidden = !paused;
+    document.querySelector(".exam-nav").hidden = paused;
+    $("calcToggle").hidden = paused;
+    $("dots").style.pointerEvents = paused ? "none" : "";
+    $("dots").style.opacity = paused ? ".45" : "";
+    $("pauseBtn").textContent = paused ? "Resume" : "Pause";
+    if (paused) {
+      $("pauseNote").textContent = "The clock is stopped and the question is hidden. " +
+        fmtClock(remainingMs()) + " still on the clock.";
+    }
+    tick();
   }
 
   function startTimer() {
     stopTimer();
-    if (!exam.timed) { $("timer").textContent = "no limit"; $("timer").className = "timer"; return; }
+    if (!exam.timed) {
+      $("timer").textContent = "no limit";
+      $("timer").className = "timer";
+      $("pauseBtn").hidden = true;
+      return;
+    }
+    $("pauseBtn").hidden = false;
     tick();
     timerId = setInterval(tick, 250);
   }
   function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
 
   function tick() {
+    if (!exam || exam.finished) return;
     var left = remainingMs();
+    if (left === null) return;
     var t = $("timer");
-    t.textContent = fmtClock(left);
-    t.className = "timer" + (left <= 60000 ? " danger" : (left <= 300000 ? " warn" : ""));
-    if (left <= 0) { stopTimer(); finishExam(true); }
+    t.textContent = fmtClock(left) + (isPaused() ? " paused" : "");
+    t.className = "timer" + (isPaused() ? " paused" :
+      (left <= 60000 ? " danger" : (left <= 300000 ? " warn" : "")));
+    if (!isPaused() && left <= 0) { stopTimer(); finishExam(true); }
   }
 
   function currentProblem() { return byId[exam.ids[exam.idx]]; }
@@ -207,6 +260,8 @@
     persistExam();
   });
   $("finishBtn").addEventListener("click", function () { saveCurrent(); confirmFinish(); });
+  $("pauseBtn").addEventListener("click", function () { setPaused(!isPaused()); });
+  $("resumePauseBtn").addEventListener("click", function () { setPaused(false); });
   $("unitInput").addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); $("nextBtn").click(); }
   });
@@ -228,7 +283,9 @@
     if (!auto) saveCurrent();
     stopTimer();
     exam.finished = true;
-    exam.elapsedMs = Date.now() - exam.startedAt;
+    exam.elapsedMs = workedMs(exam);
+    exam.pausedTotalMs = (exam.pausedMs || 0) + (exam.pausedAt ? Date.now() - exam.pausedAt : 0);
+    exam.pausedAt = null;
     store(KEY_EXAM, null);
 
     var results = exam.ids.map(function (id, i) {
@@ -278,7 +335,8 @@
     if (missed) parts.push(missed + " wrong number");
     $("scoreBreakdown").textContent = parts.join(" · ");
     $("scoreTime").textContent = (auto ? "Time expired. " : "") +
-      "Finished in " + fmtDuration(exam.elapsedMs || 0) + ".";
+      "Finished in " + fmtDuration(exam.elapsedMs || 0) + "." +
+      (exam.pausedTotalMs > 1000 ? " Paused for " + fmtDuration(exam.pausedTotalMs) + "." : "");
 
     var list = $("resultList");
     list.textContent = "";
@@ -395,10 +453,10 @@
   function checkResume() {
     var saved = load(KEY_EXAM, null);
     if (!saved || !saved.ids || saved.finished) { $("resumeBanner").hidden = true; return; }
-    if (saved.timed && (saved.startedAt + saved.durationMs - Date.now()) <= 0) { store(KEY_EXAM, null); return; }
+    if (saved.timed && remainingFor(saved) <= 0) { store(KEY_EXAM, null); return; }
     var answered = saved.answers.filter(function (a) { return a.num.trim() !== ""; }).length;
     $("resumeInfo").textContent = saved.label + " · " + answered + " of " + saved.ids.length + " answered" +
-      (saved.timed ? " · " + fmtClock(saved.startedAt + saved.durationMs - Date.now()) + " left" : "");
+      (saved.timed ? " · " + fmtClock(remainingFor(saved)) + " left" + (saved.pausedAt ? " (paused)" : "") : "");
     $("resumeBanner").hidden = false;
     $("resumeBtn").onclick = function () {
       exam = saved;
@@ -406,6 +464,7 @@
       show("exam");
       renderQuestion();
       startTimer();
+      applyPauseUI();
     };
     $("discardBtn").onclick = function () { store(KEY_EXAM, null); $("resumeBanner").hidden = true; };
   }
@@ -543,6 +602,11 @@
 
   /* ---------------- keyboard ---------------- */
   document.addEventListener("keydown", function (e) {
+    if (e.altKey && (e.key === "p" || e.key === "P")) {
+      if (!$("view-exam").hidden) { e.preventDefault(); setPaused(!isPaused()); }
+      return;
+    }
+    if (isPaused()) return;   /* the clock is stopped: no shortcuts get through */
     if (e.altKey && (e.key === "c" || e.key === "C")) { e.preventDefault(); toggleCalc(); return; }
     if (e.key === "Escape" && !$("calcPanel").hidden) { toggleCalc(false); return; }
     if ($("view-exam").hidden) return;

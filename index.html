@@ -102,11 +102,12 @@
     </div>
     <div class="exam-tools">
       <span class="timer" id="timer">40:00</span>
+      <button class="btn ghost small" id="pauseBtn" title="Pause the clock (Alt+P)">Pause</button>
       <button class="btn ghost small" id="finishBtn">Finish &amp; grade</button>
     </div>
   </div>
 
-  <article class="card question">
+  <article class="card question" id="questionCard">
     <div class="qmeta">
       <span class="chip" id="qNumber">P1</span>
       <span class="chip soft" id="qTopic">Topic</span>
@@ -126,6 +127,13 @@
     </div>
     <p class="hint" id="unitHint"></p>
   </article>
+
+  <div class="card pause-screen" id="pauseScreen" hidden>
+    <div class="pause-mark">&#10073;&#10073;</div>
+    <h2>Paused</h2>
+    <p class="muted" id="pauseNote">The clock is stopped and the question is hidden.</p>
+    <button class="btn primary" id="resumePauseBtn">Resume exam</button>
+  </div>
 
   <div class="exam-nav">
     <button class="btn ghost" id="prevBtn">&larr; Previous</button>

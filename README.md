@@ -10,6 +10,7 @@ Every problem comes with a full worked solution once you submit.
 ## What's in it
 
 - **Exam mode** — 7 random problems, 40 minutes, auto-submits when the clock runs out.
+  A **pause button** stops the clock and hides the question, so a break can't be used to read ahead.
 - **Practice mode** — untimed sets filtered by chapter (5/7/10/15 problems).
 - **Problem bank** — all 150 problems, searchable by keyword, topic or number (`P42`),
   each with the official answer and a step-by-step solution.
@@ -50,6 +51,7 @@ Every problem comes with a full worked solution once you submit.
 
 | Key | Action |
 |---|---|
+| `Alt` + `P` | Pause / resume the exam |
 | `Alt` + `C` | Open / close the calculator |
 | `Esc` | Close the calculator |
 | `Alt` + `←` / `→` | Previous / next question |

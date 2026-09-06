@@ -189,6 +189,21 @@ input[type="text"]:focus, select:focus {
 .timer.warn { color: var(--warn); }
 .timer.danger { color: var(--bad); background: var(--bad-soft); }
 
+.timer.paused { color: var(--text-soft); background: var(--surface-2); }
+
+.pause-screen {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  box-shadow: var(--shadow);
+  border-style: dashed;
+}
+.pause-mark {
+  font-size: 1.6rem; letter-spacing: .12em;
+  color: var(--accent); margin-bottom: .4rem;
+}
+.pause-screen h2 { font-size: 1.3rem; margin-bottom: .3rem; }
+.pause-screen .muted { max-width: 40ch; margin: 0 auto 1.2rem; }
+
 .question { box-shadow: var(--shadow); }
 .qmeta { display: flex; align-items: center; gap: .5rem; margin-bottom: .85rem; }
 .chip {
