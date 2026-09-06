@@ -32,6 +32,20 @@
     } catch (e) { return fallback; }
   }
 
+  /* One-time cleanup: carry over anything saved under the old key prefix,
+     then remove it so no legacy names linger in the browser. */
+  (function migrateLegacyKeys() {
+    try {
+      [["phys161.theme", KEY_THEME], ["phys161.stats", KEY_STATS], ["phys161.exam", KEY_EXAM]]
+        .forEach(function (pair) {
+          var old = localStorage.getItem(pair[0]);
+          if (old === null) return;
+          if (localStorage.getItem(pair[1]) === null) localStorage.setItem(pair[1], old);
+          localStorage.removeItem(pair[0]);
+        });
+    } catch (e) { /* private mode: nothing to migrate */ }
+  })();
+
   /* ---------------- theme ---------------- */
   function applyTheme(t) {
     document.documentElement.setAttribute("data-theme", t);
