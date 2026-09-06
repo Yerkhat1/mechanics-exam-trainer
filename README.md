@@ -5,7 +5,7 @@ from a 150-problem pool, a **40-minute timer**, a built-in **scientific calculat
 and **units required** — graded the way Moodle grades them (90% number, 10% unit).
 Every problem comes with a full worked solution once you submit.
 
-**Live site:** https://YOUR_USERNAME.github.io/phys161-exam-trainer/
+**Live site:** https://yerkhat1.github.io/phys161-exam-trainer/
 
 ## What's in it
 
