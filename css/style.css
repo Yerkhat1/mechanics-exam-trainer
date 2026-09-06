@@ -214,6 +214,10 @@ input[type="text"]:focus, select:focus {
 }
 input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
 .check { display: flex; align-items: center; gap: .45rem; font-size: .87rem; color: var(--text-soft); }
+.cycle-info {
+  margin: .7rem 0 0; font-size: .78rem; line-height: 1.5;
+  color: var(--accent); font-weight: 500;
+}
 .tips { margin: 0; padding-left: 1.1rem; font-size: .9rem; color: var(--text-soft); }
 .tips li { margin-bottom: .5rem; }
 .tips li::marker { color: var(--accent); }

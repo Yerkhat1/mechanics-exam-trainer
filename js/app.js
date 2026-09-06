@@ -7,6 +7,7 @@
   var KEY_THEME = "mechtrainer.theme";
   var KEY_STATS = "mechtrainer.stats";
   var KEY_EXAM  = "mechtrainer.exam";
+  var KEY_CYCLE = "mechtrainer.cycle";
 
   var $ = function (id) { return document.getElementById(id); };
   var byId = {};
@@ -92,6 +93,71 @@
     }
     return a;
   }
+  /* ---- question dealing ----------------------------------------------
+     Problems are dealt like cards from a deck rather than drawn at random
+     every time: a problem will not come back until every other problem in
+     the same pool has been used. When the deck runs out it is reshuffled,
+     and the cards just dealt are kept out of the new deck so nothing can
+     repeat across the join.
+
+     Each pool keeps its own deck, keyed by "all" or by topic, so practising
+     one chapter does not disturb the coverage of the full exam.               */
+
+  function loadCycle() { return load(KEY_CYCLE, {}) || {}; }
+
+  function cycleUsed(key) {
+    var c = loadCycle();
+    return Array.isArray(c[key]) ? c[key] : [];
+  }
+
+  function setCycleUsed(key, ids) {
+    var c = loadCycle();
+    c[key] = ids;
+    store(KEY_CYCLE, c);
+  }
+
+  function pickProblems(pool, size, key) {
+    size = Math.min(size, pool.length);
+
+    /* a set no bigger than the pool means every problem is used every time */
+    if (size >= pool.length) {
+      setCycleUsed(key, []);
+      return shuffled(pool);
+    }
+
+    var used = cycleUsed(key);
+    var usedSet = {};
+    used.forEach(function (n) { usedSet[n] = true; });
+
+    var fresh = pool.filter(function (p) { return !usedSet[p.n]; });
+
+    if (fresh.length >= size) {
+      var picked = shuffled(fresh).slice(0, size);
+      setCycleUsed(key, used.concat(picked.map(function (p) { return p.n; })));
+      return picked;
+    }
+
+    /* Deck exhausted: take what is left, then reshuffle. The leftovers are
+       excluded from the new deck so they cannot appear twice in one set.   */
+    var rest = shuffled(fresh);
+    var restIds = {};
+    rest.forEach(function (p) { restIds[p.n] = true; });
+
+    var topUp = shuffled(pool.filter(function (p) { return !restIds[p.n]; }))
+                  .slice(0, size - rest.length);
+
+    var out = shuffled(rest.concat(topUp));
+    setCycleUsed(key, out.map(function (p) { return p.n; }));
+    return out;
+  }
+
+  /* how far through the current deck a pool is */
+  function cycleProgress(key, poolSize) {
+    var n = cycleUsed(key).length;
+    if (n >= poolSize) n = poolSize;
+    return { seen: n, total: poolSize };
+  }
+
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function fmtClock(ms) {
     if (ms < 0) ms = 0;
@@ -108,8 +174,8 @@
   var exam = null;
   var timerId = null;
 
-  function newExam(pool, size, timed, label) {
-    var picked = shuffled(pool).slice(0, Math.min(size, pool.length));
+  function newExam(pool, size, timed, label, key) {
+    var picked = pickProblems(pool, size, key || "all");
     exam = {
       ids: picked.map(function (p) { return p.n; }),
       answers: picked.map(function () { return { num: "", unit: "", flagged: false }; }),
@@ -408,7 +474,7 @@
     });
     $("expandAllBtn").textContent = opening ? "Collapse all solutions" : "Expand all solutions";
   });
-  $("againBtn").addEventListener("click", function () { newExam(PROBLEMS, EXAM_SIZE, $("timedCheck").checked, "Exam"); });
+  $("againBtn").addEventListener("click", function () { newExam(PROBLEMS, EXAM_SIZE, $("timedCheck").checked, "Exam", "all"); });
   $("homeBtn").addEventListener("click", function () { show("home"); });
 
   /* ---------------- home ---------------- */
@@ -429,16 +495,26 @@
   fillTopicSelect($("browseTopic"), "All topics (150)");
 
   $("startExamBtn").addEventListener("click", function () {
-    newExam(PROBLEMS, EXAM_SIZE, $("timedCheck").checked, "Exam");
+    newExam(PROBLEMS, EXAM_SIZE, $("timedCheck").checked, "Exam", "all");
   });
   $("startPracticeBtn").addEventListener("click", function () {
     var key = $("topicSelect").value;
     var pool = (key === "all") ? PROBLEMS : PROBLEMS.filter(function (p) { return p.t === key; });
     var n = parseInt($("countSelect").value, 10);
-    newExam(pool, n, false, key === "all" ? "Practice" : TOPICS[key]);
+    newExam(pool, n, false, key === "all" ? "Practice" : TOPICS[key], key);
   });
 
+  function renderCycleInfo() {
+    var pr = cycleProgress("all", PROBLEMS.length);
+    var left = pr.total - pr.seen;
+    $("cycleInfo").textContent = pr.seen === 0
+      ? "Fresh set of " + pr.total + " problems - no repeats until you have seen them all."
+      : pr.seen + " of " + pr.total + " problems used this round" +
+        (left > 0 ? " - " + left + " still to come before any repeat." : " - next exam starts a new round.");
+  }
+
   function renderStats() {
+    renderCycleInfo();
     var st = load(KEY_STATS, { runs: [], perProblem: {} });
     var row = $("statsRow");
     row.textContent = "";
@@ -457,7 +533,11 @@
     });
   }
   $("clearStatsBtn").addEventListener("click", function () {
-    if (confirm("Clear your saved scores and progress?")) { store(KEY_STATS, null); renderStats(); }
+    if (confirm("Clear your saved scores and progress? This also starts a fresh set of questions.")) {
+      store(KEY_STATS, null);
+      store(KEY_CYCLE, null);
+      renderStats();
+    }
   });
 
   /* resume an interrupted exam */

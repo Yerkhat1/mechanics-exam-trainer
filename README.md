@@ -9,9 +9,13 @@ Every problem comes with a full worked solution once you submit.
 
 ## What's in it
 
-- **Exam mode** — 7 random problems, 40 minutes, auto-submits when the clock runs out.
+- **Exam mode** — 7 problems, 40 minutes, auto-submits when the clock runs out.
   A **pause button** stops the clock and hides the question, so a break can't be used to read ahead.
 - **Practice mode** — untimed sets filtered by chapter (5/7/10/15 problems).
+- **No-repeat question dealing** — problems are dealt like cards from a deck, so a problem
+  never returns until every other one has been used. All 150 are covered in 22 exams instead
+  of the ~120 that independent random draws would need. Each pool (the full exam, and each
+  chapter) keeps its own deck, and progress survives refreshes.
 - **Problem bank** — all 150 problems, searchable by keyword, topic or number (`P42`),
   each with the official answer and a step-by-step solution.
 - **Calculator** — trig (DEG/RAD), inverse trig, `sqrt`, `ln`, `log`, powers, `pi`,
