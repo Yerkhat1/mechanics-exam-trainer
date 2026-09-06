@@ -12,6 +12,14 @@
   var byId = {};
   PROBLEMS.forEach(function (p) { byId[p.n] = p; });
 
+  /* Topic chip carries a data-topic attribute so CSS can give each chapter
+     its own hue - it makes the problem bank scannable at a glance. */
+  function topicChip(key) {
+    var c = el("span", "chip topic", TOPICS[key]);
+    c.setAttribute("data-topic", key);
+    return c;
+  }
+
   function el(tag, cls, text) {
     var n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -219,6 +227,8 @@
     $("qCounter").textContent = "Question " + (exam.idx + 1) + " of " + exam.ids.length + " · " + exam.label;
     $("qNumber").textContent = "P" + p.n;
     $("qTopic").textContent = TOPICS[p.t];
+    $("qTopic").className = "chip topic";
+    $("qTopic").setAttribute("data-topic", p.t);
     $("qText").textContent = p.q;
     $("ansInput").value = a.num;
     $("unitInput").value = a.unit;
@@ -326,6 +336,7 @@
 
   function renderResults(results, earned, total, pct, auto) {
     $("scorePct").textContent = Math.round(pct) + "%";
+    $("scorePct").className = "score-number " + (pct >= 80 ? "high" : (pct >= 50 ? "mid" : "low"));
     $("scoreFraction").textContent = earned.toFixed(1) + " / " + total.toFixed(1) + " points";
     var full = results.filter(function (r) { return r.grade.numberOk && r.grade.unitOk; }).length;
     var numOnly = results.filter(function (r) { return r.grade.numberOk && !r.grade.unitOk; }).length;
@@ -347,7 +358,7 @@
 
       var head = el("div", "result-head");
       head.appendChild(el("span", "chip", "P" + r.p.n));
-      head.appendChild(el("span", "chip soft", TOPICS[r.p.t]));
+      head.appendChild(topicChip(r.p.t));
       head.appendChild(el("span", "verdict " + v,
         v === "correct" ? "1.0 pt" : (v === "partial" ? r.grade.score.toFixed(1) + " pt" : "0 pt")));
       card.appendChild(head);
@@ -491,7 +502,7 @@
       var item = el("div", "browse-item");
       var head = el("div", "result-head");
       head.appendChild(el("span", "chip", "P" + p.n));
-      head.appendChild(el("span", "chip soft", TOPICS[p.t]));
+      head.appendChild(topicChip(p.t));
       item.appendChild(head);
       item.appendChild(el("p", "qtext", p.q));
 
