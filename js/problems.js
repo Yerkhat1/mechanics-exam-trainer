@@ -1,4 +1,4 @@
-/* PHYS 161 - Exam 1 problem bank (Chapters 1-6)
+/* Exam 1 problem bank - introductory mechanics (Chapters 1-6)
    Each entry: n (number), t (topic key), q (question), a (answer value),
    u (Moodle unit string, "" = dimensionless), s (worked solution). */
 

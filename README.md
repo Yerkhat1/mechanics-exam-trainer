@@ -1,11 +1,11 @@
-# PHYS 161 — Exam 1 Trainer
+# Mechanics — Exam 1 Trainer
 
-A practice site that mimics the PHYS 161 Exam 1 format: **7 problems drawn at random**
+A practice site that mimics a first-year mechanics Exam 1 format: **7 problems drawn at random**
 from a 150-problem pool, a **40-minute timer**, a built-in **scientific calculator**,
 and **units required** — graded the way Moodle grades them (90% number, 10% unit).
 Every problem comes with a full worked solution once you submit.
 
-**Live site:** https://yerkhat1.github.io/phys161-exam-trainer/
+**Live site:** https://yerkhat1.github.io/mechanics-exam-trainer/
 
 ## What's in it
 
@@ -97,7 +97,7 @@ If you spot a mistake in a problem or a solution, please open an issue.
 
 ## Disclaimer
 
-Unofficial study tool. Not affiliated with or endorsed by the PHYS 161 course staff.
+Unofficial study tool. Not affiliated with or endorsed by any course or institution.
 Problem statements come from the publicly posted Exam 1 practice set; the solutions
 and the site are original work.
 

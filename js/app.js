@@ -1,12 +1,12 @@
-/* PHYS 161 Exam Trainer - application logic. */
+/* Mechanics Exam Trainer - application logic. */
 (function () {
   "use strict";
 
   var EXAM_SIZE = 7;
   var EXAM_MINUTES = 40;
-  var KEY_THEME = "phys161.theme";
-  var KEY_STATS = "phys161.stats";
-  var KEY_EXAM  = "phys161.exam";
+  var KEY_THEME = "mechtrainer.theme";
+  var KEY_STATS = "mechtrainer.stats";
+  var KEY_EXAM  = "mechtrainer.exam";
 
   var $ = function (id) { return document.getElementById(id); };
   var byId = {};

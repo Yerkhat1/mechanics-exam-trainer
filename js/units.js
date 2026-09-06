@@ -1,5 +1,5 @@
-/* Answer + unit checking, modelled on the Moodle numerical-with-unit format
-   used in PHYS 161: 90% of each question for the number, 10% for the unit. */
+/* Answer + unit checking, modelled on the Moodle numerical-with-unit format:
+   90% of each question for the number, 10% for the unit. */
 
 const NUMERIC_TOLERANCE = 0.01; /* 1% relative tolerance */
 
