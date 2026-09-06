@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PHYS 161 Exam Trainer</title>
+<meta name="description" content="Practice the PHYS 161 Exam 1 format: 7 random problems, 40 minutes, units required, full worked solutions afterwards.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚛️</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="brand" data-nav="home">
+    <span class="brand-mark">161</span>
+    <span class="brand-text">Exam&nbsp;Trainer</span>
+  </button>
+  <nav class="topnav">
+    <button class="navbtn" data-nav="home">Home</button>
+    <button class="navbtn" data-nav="browse">Problem bank</button>
+    <button class="navbtn icon" id="themeToggle" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============ HOME ============ -->
+<section id="view-home" class="view">
+  <div class="hero">
+    <h1>PHYS 161 &mdash; Exam 1 Trainer</h1>
+    <p class="lede">
+      Seven problems drawn at random from the 150-problem pool, 40 minutes on the clock,
+      answers graded the way Moodle grades them: 90&#37; for the number, 10&#37; for the unit.
+      Full worked solutions once you submit.
+    </p>
+  </div>
+
+  <div id="resumeBanner" class="banner" hidden>
+    <div>
+      <strong>You have an exam in progress.</strong>
+      <span id="resumeInfo" class="muted"></span>
+    </div>
+    <div class="banner-actions">
+      <button class="btn primary" id="resumeBtn">Resume</button>
+      <button class="btn ghost" id="discardBtn">Discard</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card feature">
+      <h2>Exam mode</h2>
+      <p class="muted">7 random problems &middot; 40 minutes &middot; calculator &middot; units required</p>
+      <button class="btn primary big" id="startExamBtn">Start exam</button>
+      <label class="check">
+        <input type="checkbox" id="timedCheck" checked>
+        <span>Use the 40-minute timer</span>
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>Practice a topic</h2>
+      <p class="muted">Untimed. Pick a chapter and how many problems you want.</p>
+      <div class="field-row">
+        <label class="field">
+          <span>Topic</span>
+          <select id="topicSelect"></select>
+        </label>
+        <label class="field narrow">
+          <span>Problems</span>
+          <select id="countSelect">
+            <option>5</option><option selected>7</option><option>10</option><option>15</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn" id="startPracticeBtn">Start practice set</button>
+    </div>
+  </div>
+
+  <div class="card stats-card">
+    <h2>Your record</h2>
+    <div class="stats" id="statsRow"></div>
+    <button class="btn ghost small" id="clearStatsBtn">Reset record</button>
+  </div>
+
+  <div class="card info">
+    <h2>How answers are marked</h2>
+    <ul class="tips">
+      <li><strong>Number</strong> &mdash; worth 0.9 of each problem. Accepted within 1&#37; of the official value, so <code>4.065</code>, <code>4.07</code> and <code>4.0650406</code> all pass.</li>
+      <li><strong>Unit</strong> &mdash; worth 0.1. Type it the Moodle way: <code>m/s^2</code>, <code>cm^3</code>, <code>N</code>, <code>km/h</code>, <code>rad</code>. <code>m/s2</code> and <code>m/s&sup2;</code> are accepted too.</li>
+      <li>A few answers are pure ratios (relative error, coefficients of friction). Those have <strong>no unit</strong> &mdash; leave the unit box empty.</li>
+      <li>Scientific notation works: <code>5.15e-6</code> or <code>5.15x10^-6</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ EXAM ============ -->
+<section id="view-exam" class="view" hidden>
+  <div class="exam-bar">
+    <div class="exam-progress">
+      <span id="qCounter">Question 1 of 7</span>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="exam-tools">
+      <span class="timer" id="timer">40:00</span>
+      <button class="btn ghost small" id="finishBtn">Finish &amp; grade</button>
+    </div>
+  </div>
+
+  <article class="card question">
+    <div class="qmeta">
+      <span class="chip" id="qNumber">P1</span>
+      <span class="chip soft" id="qTopic">Topic</span>
+      <button class="flagbtn" id="flagBtn" title="Flag for review">Flag</button>
+    </div>
+    <p class="qtext" id="qText"></p>
+
+    <div class="answer-row">
+      <label class="field">
+        <span>Answer</span>
+        <input type="text" id="ansInput" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 4.065">
+      </label>
+      <label class="field narrow">
+        <span>Unit</span>
+        <input type="text" id="unitInput" autocomplete="off" spellcheck="false" placeholder="e.g. m/s^2">
+      </label>
+    </div>
+    <p class="hint" id="unitHint"></p>
+  </article>
+
+  <div class="exam-nav">
+    <button class="btn ghost" id="prevBtn">&larr; Previous</button>
+    <button class="btn" id="nextBtn">Next &rarr;</button>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="view-results" class="view" hidden>
+  <div class="card score-card">
+    <div class="score-main">
+      <div class="score-number" id="scorePct">0%</div>
+      <div class="score-detail">
+        <div id="scoreFraction">0.0 / 7.0 points</div>
+        <div class="muted" id="scoreBreakdown"></div>
+        <div class="muted" id="scoreTime"></div>
+      </div>
+    </div>
+    <div class="score-actions">
+      <button class="btn primary" id="againBtn">New exam</button>
+      <button class="btn ghost" id="homeBtn">Home</button>
+      <button class="btn ghost" id="expandAllBtn">Expand all solutions</button>
+    </div>
+  </div>
+  <div id="resultList"></div>
+</section>
+
+<!-- ============ BROWSE ============ -->
+<section id="view-browse" class="view" hidden>
+  <div class="card browse-controls">
+    <h2>Problem bank</h2>
+    <p class="muted">All 150 problems with answers and worked solutions. Search by keyword, number or topic.</p>
+    <div class="field-row">
+      <label class="field grow">
+        <span>Search</span>
+        <input type="text" id="searchInput" placeholder="pulley, terminal velocity, P42, incline..." autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Topic</span>
+        <select id="browseTopic"></select>
+      </label>
+    </div>
+    <div class="browse-meta"><span id="browseCount"></span></div>
+  </div>
+  <div id="browseList"></div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <span>Unofficial study tool for PHYS 161 (Chapters 1&ndash;6). Not affiliated with the course staff.</span>
+</footer>
+
+<!-- ============ CALCULATOR ============ -->
+<button id="calcToggle" class="calc-toggle" title="Calculator (Alt+C)" aria-label="Open calculator">
+  <span>=</span>
+</button>
+
+<div id="calcPanel" class="calc-panel" hidden>
+  <div class="calc-head">
+    <strong>Calculator</strong>
+    <div class="calc-head-right">
+      <button class="modebtn" id="angleMode" title="Angle unit for trig functions">DEG</button>
+      <button class="closebtn" id="calcClose" aria-label="Close calculator">&times;</button>
+    </div>
+  </div>
+  <input type="text" id="calcInput" class="calc-input" placeholder="e.g. sqrt(2*1.7*200)" autocomplete="off" spellcheck="false">
+  <div class="calc-output" id="calcOutput">&nbsp;</div>
+  <div class="calc-keys">
+    <button data-k="sin(">sin</button><button data-k="cos(">cos</button><button data-k="tan(">tan</button>
+    <button data-k="asin(">asin</button><button data-k="acos(">acos</button><button data-k="atan(">atan</button>
+    <button data-k="sqrt(">&radic;</button><button data-k="^">x^y</button><button data-k="pi">&pi;</button>
+    <button data-k="(">(</button><button data-k=")">)</button><button data-k="ln(">ln</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="/" class="op">&divide;</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="*" class="op">&times;</button>
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="-" class="op">&minus;</button>
+    <button data-k="0">0</button><button data-k=".">.</button><button data-k="e-">e-</button><button data-k="+" class="op">+</button>
+    <button id="calcClear" class="wide">Clear</button>
+    <button id="calcBack">&#9003;</button>
+    <button id="calcEq" class="eq wide">=</button>
+  </div>
+  <button class="btn ghost small full" id="calcToAnswer">Use result as answer</button>
+</div>
+
+<script src="js/problems.js"></script>
+<script src="js/units.js"></script>
+<script src="js/calculator.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
