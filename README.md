@@ -52,6 +52,18 @@ Every problem comes with a full worked solution once you submit.
   no unit — leave the unit box empty.
 - A blank answer scores zero regardless of the unit box.
 
+## Sharing a specific set of problems
+
+Append `?set=` and a list of problem numbers to open exactly those problems as an exam —
+useful for revising a list someone gives you:
+
+```
+https://yerkhat1.github.io/mechanics-exam-trainer/?set=24,56,31,73,69,115,113
+```
+
+Add `&timer=off` for an untimed run. Unknown or repeated numbers are ignored, and if none
+are valid the site opens normally. A shared set does not consume your no-repeat deck.
+
 ## Keyboard shortcuts
 
 | Key | Action |

@@ -175,7 +175,11 @@
   var timerId = null;
 
   function newExam(pool, size, timed, label, key) {
-    var picked = pickProblems(pool, size, key || "all");
+    startExamWith(pickProblems(pool, size, key || "all"), timed, label);
+  }
+
+  /* Build an exam from an explicit list of problems (used by ?set= links). */
+  function startExamWith(picked, timed, label) {
     exam = {
       ids: picked.map(function (p) { return p.n; }),
       answers: picked.map(function () { return { num: "", unit: "", flagged: false }; }),
@@ -709,9 +713,35 @@
     if (exam && !exam.finished) { saveCurrent(); }
   });
 
+  /* ---------------- shared / custom sets ----------------
+     A link like ?set=24,56,31 opens exactly those problems as an exam,
+     which is handy for revising a specific list someone gives you.
+     Add &timer=off for an untimed run.                                  */
+  function customSetFromUrl() {
+    var m = /[?&]set=([^&]+)/.exec(window.location.search);
+    if (!m) return null;
+    var wanted = decodeURIComponent(m[1]).split(",")
+      .map(function (t) { return parseInt(t.trim(), 10); })
+      .filter(function (n) { return !isNaN(n) && byId[n]; });
+    if (!wanted.length) return null;
+    var seen = {};
+    return wanted.filter(function (n) {
+      if (seen[n]) return false;
+      seen[n] = true; return true;
+    }).map(function (n) { return byId[n]; });
+  }
+
   /* ---------------- boot ---------------- */
   renderStats();
   renderBrowse();
-  checkResume();
-  show("home");
+
+  var customSet = customSetFromUrl();
+  if (customSet) {
+    store(KEY_EXAM, null);   /* a shared set always starts fresh */
+    var untimed = /[?&]timer=off/.test(window.location.search);
+    startExamWith(customSet, !untimed, "Custom set");
+  } else {
+    checkResume();
+    show("home");
+  }
 })();
