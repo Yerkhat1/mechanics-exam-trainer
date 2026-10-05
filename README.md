@@ -197,7 +197,7 @@ MIT — see [LICENSE](LICENSE).
 ## Tests
 
 ```bash
-node --test test/
+node --test test/*.test.mjs
 ```
 
 18 tests over `js/units.js`, the file that decides marks. It is loaded into a VM
