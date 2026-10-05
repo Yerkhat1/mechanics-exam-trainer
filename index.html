@@ -11,10 +11,16 @@
 <body>
 
 <header class="topbar">
-  <button class="brand" data-nav="home">
-    <span class="brand-mark">M</span>
-    <span class="brand-text">Exam&nbsp;Trainer</span>
-  </button>
+  <div class="topbar-left">
+    <button class="brand" data-nav="home">
+      <span class="brand-mark">M</span>
+      <span class="brand-text">Exam&nbsp;Trainer</span>
+    </button>
+    <div class="setswitch" role="group" aria-label="Question set">
+      <button data-set="1">Exam 1</button>
+      <button data-set="2">Exam 2</button>
+    </div>
+  </div>
   <nav class="topnav">
     <button class="navbtn" data-nav="home">Home</button>
     <button class="navbtn" data-nav="browse">Problem bank</button>
@@ -27,9 +33,9 @@
 <!-- ============ HOME ============ -->
 <section id="view-home" class="view">
   <div class="hero">
-    <h1>Mechanics &mdash; Exam 1 Trainer</h1>
+    <h1 id="heroTitle">Mechanics &mdash; Exam Trainer</h1>
     <p class="lede">
-      Seven problems dealt from the 150-problem pool &mdash; and no problem comes back until
+      Seven problems dealt from the <span id="bankSize">150</span>-problem pool &mdash; and no problem comes back until
       you have seen all the others. 40 minutes on the clock, answers graded the way Moodle
       grades them: 90&#37; for the number, 10&#37; for the unit. Full worked solutions once you submit.
     </p>
@@ -60,7 +66,7 @@
 
     <div class="card">
       <h2>Practice a topic</h2>
-      <p class="muted">Untimed. Pick a chapter and how many problems you want.</p>
+      <p class="muted">Untimed, random order. Pick a topic and how many problems you want.</p>
       <div class="field-row">
         <label class="field">
           <span>Topic</span>
@@ -69,12 +75,26 @@
         <label class="field narrow">
           <span>Problems</span>
           <select id="countSelect">
-            <option>5</option><option selected>7</option><option>10</option><option>15</option>
+            <option>5</option><option selected>7</option><option>10</option><option>15</option><option value="all">All</option>
           </select>
         </label>
       </div>
       <button class="btn" id="startPracticeBtn">Start practice set</button>
+      <label class="check practice-check">
+        <input type="checkbox" id="unsolvedCheck">
+        <span>Only problems I haven't solved yet</span>
+      </label>
     </div>
+  </div>
+
+  <div class="card topics-card">
+    <div class="topics-top">
+      <h2>Topics</h2>
+      <span class="topics-summary" id="topicsSummary"></span>
+    </div>
+    <p class="muted">A problem counts as solved once you get its number right. Sets use the size and the
+      &ldquo;unsolved&rdquo; option chosen above.</p>
+    <div class="topic-list" id="topicList"></div>
   </div>
 
   <div class="card stats-card">
@@ -87,8 +107,8 @@
     <h2>How answers are marked</h2>
     <ul class="tips">
       <li><strong>Number</strong> &mdash; worth 0.9 of each problem. Accepted within 1&#37; of the official value, so <code>4.065</code>, <code>4.07</code> and <code>4.0650406</code> all pass.</li>
-      <li><strong>Unit</strong> &mdash; worth 0.1. Type it the Moodle way: <code>m/s^2</code>, <code>cm^3</code>, <code>N</code>, <code>km/h</code>, <code>rad</code>. <code>m/s2</code> and <code>m/s&sup2;</code> are accepted too.</li>
-      <li>A few answers are pure ratios (relative error, coefficients of friction). Those have <strong>no unit</strong> &mdash; leave the unit box empty.</li>
+      <li><strong>Unit</strong> &mdash; worth 0.1. Type it the Moodle way: <code>m/s^2</code>, <code>N</code>, <code>J</code>, <code>kg m/s</code>, <code>rad/s^2</code>, <code>kg m^2</code>. <code>m/s2</code> and <code>m/s&sup2;</code> are accepted too.</li>
+      <li>A few answers are pure ratios or counts (coefficients of friction, fractions, revolutions). Those have <strong>no unit</strong> &mdash; leave the unit box empty.</li>
       <li>Scientific notation works: <code>5.15e-6</code> or <code>5.15x10^-6</code>.</li>
     </ul>
   </div>
@@ -166,7 +186,7 @@
 <section id="view-browse" class="view" hidden>
   <div class="card browse-controls">
     <h2>Problem bank</h2>
-    <p class="muted">All 150 problems with answers and worked solutions. Search by keyword, number or topic.</p>
+    <p class="muted" id="browseLede">All problems with answers and worked solutions. Search by keyword, number or topic.</p>
     <div class="field-row">
       <label class="field grow">
         <span>Search</span>
@@ -185,7 +205,7 @@
 </main>
 
 <footer class="footer">
-  <span>Unofficial study tool for introductory mechanics (Chapters 1&ndash;6). Not affiliated with any course or institution.</span>
+  <span id="footerScope">Unofficial study tool for introductory mechanics. Not affiliated with any course or institution.</span>
   <span class="visits" id="visitCount" hidden></span>
 </footer>
 
@@ -202,6 +222,7 @@
       <button class="closebtn" id="calcClose" aria-label="Close calculator">&times;</button>
     </div>
   </div>
+  <div class="calc-expr" id="calcExpr">&nbsp;</div>
   <input type="text" id="calcInput" class="calc-input" placeholder="e.g. sqrt(2*1.7*200)" autocomplete="off" spellcheck="false">
   <div class="calc-output" id="calcOutput">&nbsp;</div>
   <div class="calc-keys">
@@ -221,6 +242,7 @@
 </div>
 
 <script src="js/problems.js"></script>
+<script src="js/problems2.js"></script>
 <script src="js/units.js"></script>
 <script src="js/calculator.js"></script>
 <script src="js/app.js"></script>

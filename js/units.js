@@ -28,7 +28,18 @@ const UNIT_ALIASES = [
   ["m/s", "ms^-1", "m/sec", "meterspersecond", "meterpersecond"],
   ["m/s^2", "ms^-2", "m/sec^2", "meterspersecondsquared"],
   ["km/h", "kmh^-1", "kph", "km/hr", "kmperhour", "kilometersperhour"],
-  ["g/cm^3", "gcm^-3", "g/cc", "gramspercubiccentimeter"]
+  ["g/cm^3", "gcm^-3", "g/cc", "gramspercubiccentimeter"],
+  /* Exam 2: energy, momentum, rotation */
+  ["j", "joule", "joules"],
+  ["w", "watt", "watts"],
+  ["kg/s", "kgs^-1", "kg/sec"],
+  ["km/s", "kms^-1", "km/sec"],
+  ["kgm/s", "kg.m/s", "kgms^-1", "kg.m.s^-1"],
+  ["kgm^2", "kg.m^2"],
+  ["kgm^2/s", "kg.m^2/s", "kgm^2s^-1"],
+  ["nm", "n.m", "newtonmeter", "newtonmeters", "newtonmetre", "newtonmetres"],
+  ["rad/s", "rads^-1", "rad/sec", "radian/s", "radians/s", "radians/second"],
+  ["rad/s^2", "rads^-2", "rad/sec^2", "radian/s^2", "radians/s^2"]
 ];
 
 function normalizeUnit(raw) {
@@ -40,7 +51,7 @@ function normalizeUnit(raw) {
   u = u.replace(/⁰/g, "^0").replace(/[⁴]/g, "^4");
   u = u.replace(/⁻/g, "-");
   /* degree sign, middle dot, multiplication sign, spaces */
-  u = u.replace(/°/g, "deg").replace(/·/g, "").replace(/×/g, "");
+  u = u.replace(/°/g, "deg").replace(/[·⋅]/g, "").replace(/×/g, "");
   u = u.replace(/[\s*]/g, "");
   /* "per" written out */
   u = u.replace(/per/g, "/");
@@ -51,12 +62,21 @@ function normalizeUnit(raw) {
   return u;
 }
 
+/* The alias table is written the way a person would type a unit, but lookups happen
+   on normalised input, so the table is normalised once here. Without this any alias
+   containing "per" could never match: normalizeUnit rewrites "per" to "/" on what the
+   learner typed, while the literal alias still said "meterspersecond". Students who
+   wrote "meters per second" were losing the unit mark on a correct answer. */
+var NORMALIZED_ALIASES = UNIT_ALIASES.map(function (set) {
+  return set.map(function (entry) { return normalizeUnit(entry); });
+});
+
 function unitsMatch(given, expected) {
   var g = normalizeUnit(given);
   var e = normalizeUnit(expected);
   if (g === e) return true;
-  for (var i = 0; i < UNIT_ALIASES.length; i++) {
-    var set = UNIT_ALIASES[i];
+  for (var i = 0; i < NORMALIZED_ALIASES.length; i++) {
+    var set = NORMALIZED_ALIASES[i];
     if (set.indexOf(g) !== -1 && set.indexOf(e) !== -1) return true;
   }
   return false;
@@ -115,7 +135,11 @@ function gradeAnswer(problem, rawNumber, rawUnit) {
   for (var i = 0; i < candidates.length; i++) {
     if (numbersMatch(candidates[i], problem.a)) { numberOk = true; value = candidates[i]; break; }
   }
-  var unitOk = unitsMatch(rawUnit, problem.u);
+  /* ua lists extra spellings accepted for this problem only, e.g. "N s" for an
+     impulse given in kg m/s - kept per problem so "ns" (nanoseconds) elsewhere
+     never starts matching momentum units. */
+  var unitOk = unitsMatch(rawUnit, problem.u) ||
+    (problem.ua || []).some(function (alt) { return unitsMatch(rawUnit, alt); });
   return {
     value: value,
     numberOk: numberOk,

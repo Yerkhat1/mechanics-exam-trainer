@@ -5,18 +5,32 @@
   var EXAM_SIZE = 7;
   var EXAM_MINUTES = 40;
   var KEY_THEME = "mechtrainer.theme";
-  var KEY_STATS = "mechtrainer.stats";
-  var KEY_EXAM  = "mechtrainer.exam";
-  var KEY_CYCLE = "mechtrainer.cycle";
+  var KEY_SET   = "mechtrainer.set";
+
+  /* ---- question sets ----------------------------------------------------
+     Each exam has its own bank and its own saved record, deck and in-progress
+     exam. Exam 1 keeps the original storage keys so old records carry over.  */
+  var SETS = {
+    "1": {
+      name: "Exam 1", topics: TOPICS, problems: PROBLEMS, prefix: "mechtrainer.",
+      scope: "Chapters 1–6: units, vectors, kinematics and Newton's laws",
+      units: "m/s^2, cm^3, N, km/h, rad",
+      search: "pulley, terminal velocity, P42, incline..."
+    },
+    "2": {
+      name: "Exam 2", topics: TOPICS2, problems: PROBLEMS2, prefix: "mechtrainer.s2.",
+      scope: "work, energy, momentum and rotation",
+      units: "J, W, kg m/s, rad/s^2, kg m^2, N m",
+      search: "spring, ballistic pendulum, P72, grindstone..."
+    }
+  };
 
   var $ = function (id) { return document.getElementById(id); };
-  var byId = {};
-  PROBLEMS.forEach(function (p) { byId[p.n] = p; });
 
   /* Topic chip carries a data-topic attribute so CSS can give each chapter
      its own hue - it makes the problem bank scannable at a glance. */
   function topicChip(key) {
-    var c = el("span", "chip topic", TOPICS[key]);
+    var c = el("span", "chip topic", NAMES[key]);
     c.setAttribute("data-topic", key);
     return c;
   }
@@ -45,7 +59,7 @@
      then remove it so no legacy names linger in the browser. */
   (function migrateLegacyKeys() {
     try {
-      [["phys161.theme", KEY_THEME], ["phys161.stats", KEY_STATS], ["phys161.exam", KEY_EXAM]]
+      [["phys161.theme", KEY_THEME], ["phys161.stats", "mechtrainer.stats"], ["phys161.exam", "mechtrainer.exam"]]
         .forEach(function (pair) {
           var old = localStorage.getItem(pair[0]);
           if (old === null) return;
@@ -54,6 +68,49 @@
         });
     } catch (e) { /* private mode: nothing to migrate */ }
   })();
+
+  /* Which set is active: ?exam=N wins, then the saved choice, then Exam 2.
+     A bare ?set= link predates Exam 2, so it keeps meaning Exam 1.        */
+  function urlParam(name) {
+    var m = new RegExp("[?&]" + name + "=([^&]*)").exec(window.location.search);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  var activeId = urlParam("exam");
+  if (SETS[activeId]) store(KEY_SET, activeId);
+  else activeId = urlParam("set") !== null ? "1" : (SETS[load(KEY_SET, null)] ? load(KEY_SET, null) : "2");
+
+  var SET = SETS[activeId];
+  var BANK = SET.problems;
+  var NAMES = SET.topics;
+  var KEY_STATS = SET.prefix + "stats";
+  var KEY_EXAM  = SET.prefix + "exam";
+  var KEY_CYCLE = SET.prefix + "cycle";
+  var byId = {};
+  BANK.forEach(function (p) { byId[p.n] = p; });
+
+  /* label the page for the active set */
+  document.title = "Mechanics " + SET.name + " Trainer";
+  $("heroTitle").textContent = "Mechanics — " + SET.name + " Trainer";
+  $("bankSize").textContent = BANK.length;
+  $("browseLede").textContent = "All " + BANK.length + " " + SET.name + " problems with answers and worked solutions. Search by keyword, number or topic.";
+  $("searchInput").placeholder = SET.search;
+  $("footerScope").textContent = "Unofficial study tool for introductory mechanics (" + SET.name + ": " + SET.scope + "). Not affiliated with any course or institution.";
+
+  document.querySelectorAll("[data-set]").forEach(function (b) {
+    var id = b.getAttribute("data-set");
+    var on = (id === activeId);
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.addEventListener("click", function () {
+      if (on) return;
+      if (exam && !exam.finished) {
+        saveCurrent();
+        if (!confirm("Switch to " + SETS[id].name + "? Your exam in progress is saved - switch back to " + SET.name + " to resume it.")) return;
+      }
+      store(KEY_SET, id);
+      window.location.href = window.location.pathname + "?exam=" + id;
+    });
+  });
 
   /* ---------------- theme ---------------- */
   function applyTheme(t) {
@@ -119,6 +176,9 @@
   function pickProblems(pool, size, key) {
     size = Math.min(size, pool.length);
 
+    /* filtered pools (missed / unsolved) change every run, so no deck */
+    if (!key) return shuffled(pool).slice(0, size);
+
     /* a set no bigger than the pool means every problem is used every time */
     if (size >= pool.length) {
       setCycleUsed(key, []);
@@ -174,13 +234,55 @@
   var exam = null;
   var timerId = null;
 
-  function newExam(pool, size, timed, label, key) {
-    startExamWith(pickProblems(pool, size, key || "all"), timed, label);
+  /* ---- what to deal ----------------------------------------------------
+     A plan describes a run so "New set" on the results page can repeat it:
+       exam     - EXAM_SIZE problems from the whole bank, timed or not
+       topic    - practice from one topic (or "all"), dealt from its deck
+       unsolved - only problems in the topic never answered correctly
+       missed   - only problems in the topic whose last attempt was wrong  */
+  function topicPool(topic) {
+    return topic === "all" ? BANK : BANK.filter(function (p) { return p.t === topic; });
+  }
+  function perProblem() { return (load(KEY_STATS, null) || {}).perProblem || {}; }
+  function isSolved(p, pp) { var e = pp[String(p.n)]; return !!(e && e.right > 0); }
+  function isMissed(p, pp) { var e = pp[String(p.n)]; return !!(e && e.last === false); }
+
+  function planPool(plan) {
+    var pool = topicPool(plan.topic);
+    var pp = perProblem();
+    if (plan.mode === "unsolved") return pool.filter(function (p) { return !isSolved(p, pp); });
+    if (plan.mode === "missed") return pool.filter(function (p) { return isMissed(p, pp); });
+    return pool;
+  }
+
+  function planLabel(plan) {
+    if (plan.mode === "exam") return "Exam";
+    var name = plan.topic === "all" ? "All topics" : NAMES[plan.topic];
+    if (plan.mode === "missed") return name + " · missed";
+    if (plan.mode === "unsolved") return name + " · unsolved";
+    return plan.topic === "all" ? "Practice" : name;
+  }
+
+  function runPlan(plan) {
+    if (plan.mode === "exam") {
+      startExamWith(pickProblems(BANK, EXAM_SIZE, "all"), plan.timed, "Exam", plan);
+      return;
+    }
+    var pool = planPool(plan);
+    /* nothing left to filter for: fall back to the whole topic */
+    if (!pool.length) {
+      plan = { mode: "topic", topic: plan.topic, size: plan.size };
+      pool = topicPool(plan.topic);
+    }
+    var size = plan.size === "all" ? pool.length : plan.size;
+    var key = plan.mode === "topic" ? plan.topic : null;
+    startExamWith(pickProblems(pool, size, key), false, planLabel(plan), plan);
   }
 
   /* Build an exam from an explicit list of problems (used by ?set= links). */
-  function startExamWith(picked, timed, label) {
+  function startExamWith(picked, timed, label, plan) {
     exam = {
+      plan: plan || null,
       ids: picked.map(function (p) { return p.n; }),
       answers: picked.map(function () { return { num: "", unit: "", flagged: false }; }),
       idx: 0,
@@ -296,13 +398,13 @@
     var a = exam.answers[exam.idx];
     $("qCounter").textContent = "Question " + (exam.idx + 1) + " of " + exam.ids.length + " · " + exam.label;
     $("qNumber").textContent = "P" + p.n;
-    $("qTopic").textContent = TOPICS[p.t];
+    $("qTopic").textContent = NAMES[p.t];
     $("qTopic").className = "chip topic";
     $("qTopic").setAttribute("data-topic", p.t);
     $("qText").textContent = p.q;
     $("ansInput").value = a.num;
     $("unitInput").value = a.unit;
-    $("unitHint").textContent = "Units count for 10% of the mark. Use the Moodle style (m/s^2, cm^3, N, km/h, rad). If the answer is a pure ratio, leave the unit box empty.";
+    $("unitHint").textContent = "Units count for 10% of the mark. Use the Moodle style (" + SET.units + "). If the answer is a pure ratio or a count, leave the unit box empty.";
     $("flagBtn").classList.toggle("on", a.flagged);
     $("prevBtn").disabled = (exam.idx === 0);
     $("nextBtn").textContent = (exam.idx === exam.ids.length - 1) ? "Review →" : "Next →";
@@ -393,6 +495,7 @@
       var e = st.perProblem[k] || { seen: 0, right: 0 };
       e.seen++;
       if (r.grade.numberOk) e.right++;
+      e.last = r.grade.numberOk;   /* drives "Retry missed" */
       st.perProblem[k] = e;
     });
     store(KEY_STATS, st);
@@ -405,6 +508,7 @@
   }
 
   function renderResults(results, earned, total, pct, auto) {
+    renderAgainButton();
     $("scorePct").textContent = Math.round(pct) + "%";
     $("scorePct").className = "score-number " + (pct >= 80 ? "high" : (pct >= 50 ? "mid" : "low"));
     $("scoreFraction").textContent = earned.toFixed(1) + " / " + total.toFixed(1) + " points";
@@ -478,38 +582,118 @@
     });
     $("expandAllBtn").textContent = opening ? "Collapse all solutions" : "Expand all solutions";
   });
-  $("againBtn").addEventListener("click", function () { newExam(PROBLEMS, EXAM_SIZE, $("timedCheck").checked, "Exam", "all"); });
+  /* "New set" repeats whatever was just finished: another exam, the next
+     batch from the same topic, or another pass over what is still missed. */
+  function againPlan() {
+    var plan = exam && exam.plan;
+    if (!plan) return { mode: "exam", timed: $("timedCheck").checked };
+    if (plan.mode !== "exam" && plan.mode !== "topic" && !planPool(plan).length) {
+      return { mode: "topic", topic: plan.topic, size: plan.size };
+    }
+    return plan;
+  }
+  function renderAgainButton() {
+    var plan = againPlan();
+    var name = plan.topic === "all" ? "all topics" : NAMES[plan.topic];
+    $("againBtn").textContent =
+      plan.mode === "exam" ? "New exam" :
+      plan.mode === "missed" ? "Retry missed · " + name :
+      plan.mode === "unsolved" ? "Next unsolved · " + name :
+      "Next set · " + name;
+  }
+  $("againBtn").addEventListener("click", function () { runPlan(againPlan()); });
   $("homeBtn").addEventListener("click", function () { show("home"); });
 
   /* ---------------- home ---------------- */
-  var topicKeys = Object.keys(TOPICS);
+  var topicKeys = Object.keys(NAMES);
   function fillTopicSelect(sel, allLabel) {
     sel.textContent = "";
     var o = el("option", null, allLabel);
     o.value = "all";
     sel.appendChild(o);
     topicKeys.forEach(function (k) {
-      var count = PROBLEMS.filter(function (p) { return p.t === k; }).length;
-      var opt = el("option", null, TOPICS[k] + " (" + count + ")");
+      var count = BANK.filter(function (p) { return p.t === k; }).length;
+      var opt = el("option", null, NAMES[k] + " (" + count + ")");
       opt.value = k;
       sel.appendChild(opt);
     });
   }
-  fillTopicSelect($("topicSelect"), "All topics (150)");
-  fillTopicSelect($("browseTopic"), "All topics (150)");
+  fillTopicSelect($("topicSelect"), "All topics (" + BANK.length + ")");
+  fillTopicSelect($("browseTopic"), "All topics (" + BANK.length + ")");
+
+  function practiceSize() {
+    var v = $("countSelect").value;
+    return v === "all" ? "all" : parseInt(v, 10);
+  }
+  function practicePlan(topic) {
+    return { mode: $("unsolvedCheck").checked ? "unsolved" : "topic", topic: topic, size: practiceSize() };
+  }
 
   $("startExamBtn").addEventListener("click", function () {
-    newExam(PROBLEMS, EXAM_SIZE, $("timedCheck").checked, "Exam", "all");
+    runPlan({ mode: "exam", timed: $("timedCheck").checked });
   });
   $("startPracticeBtn").addEventListener("click", function () {
-    var key = $("topicSelect").value;
-    var pool = (key === "all") ? PROBLEMS : PROBLEMS.filter(function (p) { return p.t === key; });
-    var n = parseInt($("countSelect").value, 10);
-    newExam(pool, n, false, key === "all" ? "Practice" : TOPICS[key], key);
+    runPlan(practicePlan($("topicSelect").value));
   });
 
+  /* ---- topic progress --------------------------------------------------
+     One row per topic: how many problems have been solved at least once,
+     and one-click practice for that topic or for the ones still missed.  */
+  function renderTopics() {
+    var pp = perProblem();
+    var list = $("topicList");
+    list.textContent = "";
+    var finished = 0;
+
+    topicKeys.forEach(function (k) {
+      var pool = topicPool(k);
+      var solved = pool.filter(function (p) { return isSolved(p, pp); }).length;
+      var missed = pool.filter(function (p) { return isMissed(p, pp); }).length;
+      var done = solved === pool.length;
+      if (done) finished++;
+
+      var row = el("div", "topic-row" + (done ? " done" : ""));
+      row.setAttribute("data-topic", k);
+
+      var main = el("div", "topic-main");
+      var head = el("div", "topic-head");
+      head.appendChild(topicChip(k));
+      if (done) head.appendChild(el("span", "topic-badge", "✓ Finished"));
+      main.appendChild(head);
+
+      var bar = el("div", "topic-bar");
+      var fill = el("span");
+      fill.style.width = Math.round(solved / pool.length * 100) + "%";
+      bar.appendChild(fill);
+      main.appendChild(bar);
+
+      main.appendChild(el("div", "topic-count",
+        solved + " / " + pool.length + " solved" + (missed ? " · " + missed + " missed" : "")));
+      row.appendChild(main);
+
+      var actions = el("div", "topic-actions");
+      var go = el("button", "btn small", done ? "Practice again" : "Practice");
+      go.addEventListener("click", function () {
+        /* a finished topic ignores "unsolved only" - there is nothing left */
+        runPlan(done ? { mode: "topic", topic: k, size: practiceSize() } : practicePlan(k));
+      });
+      actions.appendChild(go);
+      if (missed) {
+        var retry = el("button", "btn ghost small", "Retry missed (" + missed + ")");
+        retry.addEventListener("click", function () {
+          runPlan({ mode: "missed", topic: k, size: practiceSize() });
+        });
+        actions.appendChild(retry);
+      }
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+
+    $("topicsSummary").textContent = finished + " of " + topicKeys.length + " finished";
+  }
+
   function renderCycleInfo() {
-    var pr = cycleProgress("all", PROBLEMS.length);
+    var pr = cycleProgress("all", BANK.length);
     var left = pr.total - pr.seen;
     $("cycleInfo").textContent = pr.seen === 0
       ? "Fresh set of " + pr.total + " problems - no repeats until you have seen them all."
@@ -519,6 +703,7 @@
 
   function renderStats() {
     renderCycleInfo();
+    renderTopics();
     var st = load(KEY_STATS, { runs: [], perProblem: {} });
     var row = $("statsRow");
     row.textContent = "";
@@ -529,7 +714,7 @@
     [["Sets completed", runs.length],
      ["Average score", runs.length ? Math.round(avg) + "%" : "—"],
      ["Best score", runs.length ? Math.round(best) + "%" : "—"],
-     ["Problems seen", seen + " / 150"]].forEach(function (pair) {
+     ["Problems seen", seen + " / " + BANK.length]].forEach(function (pair) {
       var b = el("div");
       b.appendChild(el("div", "stat-value", String(pair[1])));
       b.appendChild(el("div", "stat-label", pair[0]));
@@ -571,16 +756,16 @@
     var list = $("browseList");
     list.textContent = "";
 
-    var matches = PROBLEMS.filter(function (p) {
+    var matches = BANK.filter(function (p) {
       if (topic !== "all" && p.t !== topic) return false;
       if (!q) return true;
       var num = q.replace(/^p/, "");
       if (/^\d+$/.test(num) && String(p.n) === num) return true;
-      var hay = ("p" + p.n + " " + TOPICS[p.t] + " " + p.q + " " + p.s).toLowerCase();
+      var hay = ("p" + p.n + " " + NAMES[p.t] + " " + p.q + " " + p.s).toLowerCase();
       return q.split(/\s+/).every(function (word) { return hay.indexOf(word) !== -1; });
     });
 
-    $("browseCount").textContent = matches.length + " of " + PROBLEMS.length + " problems";
+    $("browseCount").textContent = matches.length + " of " + BANK.length + " problems";
 
     matches.forEach(function (p) {
       var item = el("div", "browse-item");
@@ -626,15 +811,31 @@
   var calcDeg = true;
   var calcAns = 0;
 
-  function calcEval() {
+  /* commit: the user pressed "=" or Enter, so the result replaces the
+     expression in the input the way a handheld calculator works, and the
+     expression moves to the faint line above. Without it this only previews. */
+  function calcEval(commit) {
     var src = $("calcInput").value.trim();
     var out = $("calcOutput");
-    if (!src) { out.textContent = " "; out.className = "calc-output"; return; }
+    if (!src) {
+      out.textContent = " ";
+      out.className = "calc-output";
+      if (commit) $("calcExpr").textContent = " ";
+      return;
+    }
     try {
       var v = CalcEngine.evaluate(src, calcDeg, calcAns);
-      calcAns = v;
-      out.textContent = formatCalc(v);
+      var text = formatCalc(v);
+      out.textContent = text;
       out.className = "calc-output";
+      if (commit) {
+        calcAns = v;                       /* "ans" tracks committed results only */
+        $("calcExpr").textContent = src + " =";
+        var i = $("calcInput");
+        i.value = text;
+        i.selectionStart = i.selectionEnd = text.length;
+        i.focus();
+      }
     } catch (err) {
       out.textContent = err.message;
       out.className = "calc-output err";
@@ -651,7 +852,7 @@
     i.value = i.value.slice(0, start) + text + i.value.slice(end);
     i.selectionStart = i.selectionEnd = start + text.length;
     i.focus();
-    calcEval();
+    calcEval(false);
   }
   function toggleCalc(open) {
     var panel = $("calcPanel");
@@ -660,25 +861,26 @@
   }
   $("calcToggle").addEventListener("click", function () { toggleCalc(); });
   $("calcClose").addEventListener("click", function () { toggleCalc(false); });
-  $("calcInput").addEventListener("input", calcEval);
+  $("calcInput").addEventListener("input", function () { calcEval(false); });
   $("calcInput").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") { e.preventDefault(); calcEval(); }
+    if (e.key === "Enter") { e.preventDefault(); calcEval(true); }
   });
-  $("calcEq").addEventListener("click", calcEval);
+  $("calcEq").addEventListener("click", function () { calcEval(true); });
   $("calcClear").addEventListener("click", function () {
     $("calcInput").value = ""; $("calcOutput").textContent = " ";
+    $("calcExpr").textContent = " ";
     $("calcOutput").className = "calc-output"; $("calcInput").focus();
   });
   $("calcBack").addEventListener("click", function () {
     var i = $("calcInput");
     var s = i.selectionStart;
     if (s > 0) { i.value = i.value.slice(0, s - 1) + i.value.slice(i.selectionEnd); i.selectionStart = i.selectionEnd = s - 1; }
-    i.focus(); calcEval();
+    i.focus(); calcEval(false);
   });
   $("angleMode").addEventListener("click", function () {
     calcDeg = !calcDeg;
     $("angleMode").textContent = calcDeg ? "DEG" : "RAD";
-    calcEval();
+    calcEval(false);
   });
   document.querySelectorAll(".calc-keys button[data-k]").forEach(function (b) {
     b.addEventListener("click", function () { insert(b.getAttribute("data-k")); });

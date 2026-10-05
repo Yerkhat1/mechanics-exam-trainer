@@ -129,6 +129,25 @@ code {
   box-shadow: 0 4px 12px rgba(99, 102, 241, .4);
 }
 .brand-text { font-size: .95rem; }
+.topbar-left { display: flex; align-items: center; gap: .9rem; min-width: 0; }
+
+/* Exam 1 / Exam 2 segmented switch */
+.setswitch {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.setswitch button {
+  font: inherit; font-size: .8rem; font-weight: 600; white-space: nowrap;
+  padding: .28rem .65rem; border: 0; border-radius: 7px; cursor: pointer;
+  background: transparent; color: var(--text-soft);
+  transition: background .14s ease, color .14s ease;
+}
+.setswitch button:hover { color: var(--accent); }
+.setswitch button.on {
+  background: var(--gradient); color: #fff; cursor: default;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, .35);
+}
 .topnav { display: flex; align-items: center; gap: .25rem; }
 .navbtn {
   background: none; border: 0; border-radius: var(--radius-sm);
@@ -261,6 +280,43 @@ html[data-theme="dark"] .chip.topic {
 [data-topic="friction"]  { --th: 348; }
 [data-topic="newton2"]   { --th: 305; }
 [data-topic="applynewt"] { --th: 202; }
+/* Exam 2 */
+[data-topic="work"]      { --th:  32; }
+[data-topic="kinetic"]   { --th:  12; }
+[data-topic="power"]     { --th:  50; }
+[data-topic="potential"] { --th: 280; }
+[data-topic="energy"]    { --th: 222; }
+[data-topic="impulse"]   { --th: 350; }
+[data-topic="momentum"]  { --th: 188; }
+[data-topic="rocket"]    { --th:   0; }
+[data-topic="inertia"]   { --th: 262; }
+[data-topic="rotation"]  { --th: 155; }
+[data-topic="torque"]    { --th: 318; }
+[data-topic="angmom"]    { --th: 200; }
+
+/* ---------- topic progress ---------- */
+.practice-check { margin-top: .7rem; }
+.topics-top { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.topics-summary { font-size: .82rem; font-weight: 600; color: var(--accent); }
+.topic-list { display: flex; flex-direction: column; gap: .5rem; }
+.topic-row {
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem 1rem;
+  flex-wrap: wrap; padding: .7rem .85rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.topic-row.done { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 35%, transparent); }
+.topic-main { flex: 1 1 140px; min-width: 0; }
+.topic-head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .45rem; }
+.topic-badge { font-size: .74rem; font-weight: 700; color: var(--good); }
+.topic-bar { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.topic-bar span {
+  display: block; height: 100%; border-radius: inherit;
+  background: hsl(var(--th) 72% 52%); transition: width .3s ease;
+}
+.topic-row.done .topic-bar span { background: var(--good); }
+.topic-count { font-size: .76rem; color: var(--text-soft); margin-top: .3rem; font-variant-numeric: tabular-nums; }
+.topic-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
 
 /* ---------- exam ---------- */
 .exam-bar {
@@ -412,6 +468,11 @@ html[data-theme="dark"] .chip.topic {
 }
 .closebtn { background: none; border: 0; font-size: 1.25rem; color: var(--text-soft); cursor: pointer; line-height: 1; padding: 0 .2rem; }
 .closebtn:hover { color: var(--bad); }
+.calc-expr {
+  font-family: var(--mono); font-size: .75rem; text-align: right;
+  color: var(--text-soft); min-height: 1.05rem; margin-bottom: .2rem;
+  overflow-x: auto; white-space: nowrap;
+}
 .calc-input { font-family: var(--mono) !important; font-size: .95rem; }
 .calc-output {
   font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
@@ -448,7 +509,12 @@ html[data-theme="dark"] .chip.topic {
 
 @media (max-width: 560px) {
   .brand-text { display: none; }
+  .topbar { gap: .5rem; }
+  .topbar-left { gap: .5rem; }
+  .setswitch button { padding: .26rem .5rem; font-size: .76rem; }
   .navbtn { padding: .4rem .5rem; font-size: .85rem; }
+  .topnav .navbtn[data-nav="home"] { display: none; }   /* the brand mark goes home */
+  .topic-row { padding: .6rem .7rem; }
   .exam-bar { gap: .6rem; }
   h1 { font-size: 1.6rem; }
 }

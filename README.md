@@ -1,9 +1,14 @@
-# Mechanics — Exam 1 Trainer
+# Mechanics — Exam Trainer
 
-A practice site that mimics a first-year mechanics Exam 1 format: **7 problems drawn at random**
+A practice site that mimics a first-year mechanics exam format: **7 problems drawn at random**
 from a 150-problem pool, a **40-minute timer**, a built-in **scientific calculator**,
 and **units required** — graded the way Moodle grades them (90% number, 10% unit).
 Every problem comes with a full worked solution once you submit.
+
+Two question sets, switched with the **Exam 1 / Exam 2** toggle in the top bar:
+
+- **Exam 1** — units, vectors, kinematics, Newton's laws (Chapters 1–6)
+- **Exam 2** — work, energy, momentum, rotation
 
 **Live site:** https://yerkhat1.github.io/mechanics-exam-trainer/
 
@@ -11,13 +16,21 @@ Every problem comes with a full worked solution once you submit.
 
 - **Exam mode** — 7 problems, 40 minutes, auto-submits when the clock runs out.
   A **pause button** stops the clock and hides the question, so a break can't be used to read ahead.
-- **Practice mode** — untimed sets filtered by chapter (5/7/10/15 problems).
+- **Practice mode** — untimed sets in random order, from one topic or all of them
+  (5/7/10/15 problems, or the whole topic). Tick *Only problems I haven't solved yet* to
+  work through what's left.
+- **Topic progress** — every topic shows how many of its problems you have solved (got the
+  number right at least once), with one-click **Practice**, **Retry missed** (problems
+  whose last attempt was wrong) and, once the topic is finished, **Practice again**.
+  After a practice set, *Next set* on the results page repeats the same kind of run.
 - **No-repeat question dealing** — problems are dealt like cards from a deck, so a problem
   never returns until every other one has been used. All 150 are covered in 22 exams instead
   of the ~120 that independent random draws would need. Each pool (the full exam, and each
-  chapter) keeps its own deck, and progress survives refreshes.
-- **Problem bank** — all 150 problems, searchable by keyword, topic or number (`P42`),
-  each with the official answer and a step-by-step solution.
+  topic) keeps its own deck, and progress survives refreshes.
+- **Separate records per set** — scores, decks and an in-progress exam are kept per set,
+  so switching sets never mixes them up.
+- **Problem bank** — all 150 problems of the active set, searchable by keyword, topic or
+  number (`P42`), each with the official answer and a step-by-step solution.
 - **Calculator** — trig (DEG/RAD), inverse trig, `sqrt`, `ln`, `log`, powers, `pi`,
   scientific notation, and a "use result as answer" button.
 - **Progress saved locally** — scores, problems seen, and an interrupted exam you can resume
@@ -25,7 +38,9 @@ Every problem comes with a full worked solution once you submit.
 - **Visitor counter** — a total shown in the footer (see *Counting visitors* below).
 - Light/dark theme, works on phones.
 
-## Topics covered (Chapters 1–6)
+## Topics covered
+
+### Exam 1 (Chapters 1–6)
 
 | Topic | Problems |
 |---|---|
@@ -42,14 +57,35 @@ Every problem comes with a full worked solution once you submit.
 | Applications of Newton's Laws | 30 |
 | **Total** | **150** |
 
+### Exam 2
+
+| Topic | Problems |
+|---|---|
+| Work | 14 |
+| Kinetic Energy | 11 |
+| Power | 4 |
+| Potential Energy | 6 |
+| Energy Conservation | 24 |
+| Impulse & Collisions | 12 |
+| Conservation of Momentum | 20 |
+| Rocket Propulsion | 2 |
+| Moment of Inertia | 13 |
+| Rotational Kinematics | 12 |
+| Torque | 14 |
+| Angular Momentum | 18 |
+| **Total** | **150** |
+
+Problems that relied on a figure in the original sheet describe that figure in square brackets.
+
 ## How answers are marked
 
 - **Number — 0.9 points.** Accepted within **1%** of the official value, so `4.065`,
   `4.07` and `4.0650406` all pass. Scientific notation works: `5.15e-6` or `5.15x10^-6`.
-- **Unit — 0.1 points.** Moodle style: `m/s^2`, `cm^3`, `N`, `km/h`, `rad`, `deg`.
-  Common variants are accepted too (`m/s2`, `m/s²`, `newtons`, `kph`).
-- Some answers are **pure ratios** (relative error, coefficients of friction). Those have
-  no unit — leave the unit box empty.
+- **Unit — 0.1 points.** Moodle style: `m/s^2`, `cm^3`, `N`, `km/h`, `rad`, `J`, `W`,
+  `kg m/s`, `rad/s^2`, `kg m^2`, `N m`. Common variants are accepted too (`m/s2`, `m/s²`,
+  `newtons`, `kph`, `N·m`, `kg*m^2`). Impulse answers take either `N s` or `kg m/s`.
+- Some answers are **pure ratios or counts** (coefficients of friction, fractions,
+  revolutions). Those have no unit — leave the unit box empty.
 - A blank answer scores zero regardless of the unit box.
 
 ## Sharing a specific set of problems
@@ -60,6 +96,9 @@ useful for revising a list someone gives you:
 ```
 https://yerkhat1.github.io/mechanics-exam-trainer/?set=24,56,31,73,69,115,113
 ```
+
+Those numbers refer to Exam 1. For Exam 2 problems add `&exam=2`
+(`?set=72,133&exam=2`); `?exam=2` on its own simply opens the site on Exam 2.
 
 Add `&timer=off` for an untimed run. Unknown or repeated numbers are ignored, and if none
 are valid the site opens normally. A shared set does not consume your no-repeat deck.
@@ -89,7 +128,8 @@ Then open <http://localhost:4455>.
 ```
 index.html          markup for all four views
 css/style.css       theming and layout
-js/problems.js      the 150 problems: question, answer, unit, worked solution
+js/problems.js      Exam 1: 150 problems - question, answer, unit, worked solution
+js/problems2.js     Exam 2: 150 problems, same format
 js/units.js         answer + unit checking (the Moodle-style grader)
 js/calculator.js    expression parser for the calculator (no eval)
 js/app.js           exam engine, results, problem bank, calculator UI
@@ -108,8 +148,8 @@ To add or edit a problem, append an entry to `PROBLEMS` in `js/problems.js`:
 
 ## Accuracy
 
-Every answer in the bank was recomputed from the problem statement and matches the
-official value. The grader is checked against all 150 problems at exact, 4-significant-figure
+Every answer in both banks was recomputed from the problem statement and matches the
+official value. The grader is checked against all 300 problems at exact, 4-significant-figure
 and 3-significant-figure precision.
 
 If you spot a mistake in a problem or a solution, please open an issue.
@@ -146,9 +186,32 @@ cookie-free, both needing an account you create yourself.
 ## Disclaimer
 
 Unofficial study tool. Not affiliated with or endorsed by any course or institution.
-Problem statements come from the publicly posted Exam 1 practice set; the solutions
+Problem statements come from the publicly posted Exam 1 and Exam 2 practice sets; the solutions
 and the site are original work.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+## Tests
+
+```bash
+node --test test/
+```
+
+18 tests over `js/units.js`, the file that decides marks. It is loaded into a VM
+context rather than imported, so the code under test is byte-identical to what the
+page ships.
+
+They already caught one real bug. `normalizeUnit` rewrites "per" to "/" before the
+alias table is consulted, but the table itself was never normalised, so the alias
+`meterspersecond` could not match anything. A student who typed "meters per second"
+lost the unit mark on a correct answer. Fixed by normalising the table once at load.
+
+## Limitations
+
+- The problem bank is fixed and hand-written; there is no generator.
+- Grading is numeric with a 1% tolerance plus a unit check. It cannot award partial
+  credit for a correct method with an arithmetic slip, which a human marker would.
+- Progress is per-browser. Clearing site data clears history.
